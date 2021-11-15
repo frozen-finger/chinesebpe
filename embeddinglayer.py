@@ -4,7 +4,7 @@ from gensim.models import word2vec
 import numpy as np
 import jieba
 
-model = word2vec.Word2Vec.load("Data/wordnewshalfskipgramcut.model")
+model = word2vec.Word2Vec.load("Data/wordnewshalfcut.model")
 chindex = {}
 chbushou = {}
 with open('Data/chindexpair.txt', encoding='utf-8') as f:
@@ -58,7 +58,11 @@ for line in lines:
 #             dic[i] = count
 #             count += 1
 for i in dic:
-    with open("half2indexskipgram", 'a', encoding='utf-8') as f:
-        f.write(i+' '+str(dic[i])+'\n')
-    with open("halfindex2tensorskipgram", 'a', encoding='utf-8') as f:
-        f.write(str(dic[i])+' '+model.wv.get_vector(i))
+    with open("Data/half2index", 'a', encoding='utf-8') as f:
+        f.write(i+'\t'+str(dic[i])+'\n')
+    with open("Data/halfindex2tensor", 'a', encoding='utf-8') as f:
+        st = ''
+        for j in model.wv.get_vector(i):
+            st += str(j)
+            st += ' '
+        f.write(str(dic[i])+'\t'+st+'\n')

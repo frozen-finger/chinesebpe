@@ -12,11 +12,25 @@ def collate_fn(batch):
     tarlist = torch.LongTensor(tarlist)
     return charalist, tarlist
 
-weight = [[]]
+with open("Data/halfindex2tensorskipgram", encoding='utf-8') as f:
+    index2tensor = f.readlines()
+dicindex2tensor = []
+for line in index2tensor:
+    line = line.strip('\n').split('\t')[1]
+    line = line.split(' ')
+    sen = []
+    for i in line[:-1]:
+        sen.append(float(i))
+    dicindex2tensor.append(sen)
+weight = torch.FloatTensor(dicindex2tensor)
 hotelmodel = hotelmodel().cuda()
 traindataset = DataLoader(dataloadforhotel(), batch_size=8, shuffle=True, drop_last=True, collate_fn=collate_fn)
-embedding = nn.Embedding.from_pretrained(weight)
-optimizer = optim.SGD(hotelmodel.parameters(), lr=0.01)
+embedding = nn.Embedding.from_pretrained(weight).cuda()
+lr = 0.001
+optimizer = optim.SGD([
+                    {'params': hotelmodel.parameters(), 'lr': lr*10},
+                    {'params': embedding.parameters()}], lr=lr)
+# optimizer = optim.SGD(hotelmodel.parameters(), lr=0.01)
 
 for epoch in range(100):
     sumloss = 0.0
@@ -26,7 +40,8 @@ for epoch in range(100):
         optimizer.zero_grad()
         prelist = []
         for i in range(8):
-            pre = hotelmodel(x[i].cuda().unsqueeze(0))
+            embed = embedding(x[i].cuda())
+            pre = hotelmodel(embed.unsqueeze(0))
             prelist.append(pre)
         prelist = torch.cat(prelist, 0)
         # pre = hotelmodel(prelist)
@@ -34,8 +49,8 @@ for epoch in range(100):
         loss.backward()
         optimizer.step()
         sumloss += loss.item()
-    with open("Data/newstrainloghalfcharacter", 'a', encoding='utf-8') as f:
+    with open("Data/newstrainloghalfembedding", 'a', encoding='utf-8') as f:
         f.write("epoch:{}".format(str(epoch)) + ' ' + str(sumloss) + '\n')
     print("epoch:{}, sumloss:{}".format(epoch, sumloss))
-
-    torch.save(hotelmodel.state_dict(), 'Data/newsmodelhalfcharacter.pth')
+    torch.save(embedding.state_dict(), 'Data/halfembedding.pth')
+    torch.save(hotelmodel.state_dict(), 'Data/newsmodelhalfembedding.pth')
